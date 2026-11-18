@@ -1,0 +1,197 @@
+ERL-HUB | Post-Earthquake Multi-Agency Emergency Relief Logistics Hub
+CIC-211 OOP Using C++ | Guided demonstration (run with --menu for the console)
+
+========================================================================
+UNIT I - Namespaces, inline functions, overloading, references, friend class
+========================================================================
+
+> Inline utilities from ReliefOps::Util
+  Dehradun -> Uttarkashi straight line: 59.78 km, 0.27 h by helicopter
+  200 trauma kits x 2.5 kg = 500.00 kg = 0.50 t
+
+> Overloaded allocateSupply(): volume-based payload vs priority medical triage
+  volume overload : 250 ration kits loaded into a 2000 kg allowance
+  triage overload : 40 trauma kits loaded for Tehri
+
+> Return by reference: stockOf() hands back the ledger entry itself
+  blankets before: 3000, after 'depot.stockOf("BLK-04") += 500': 3500
+
+> Call by reference and chained return by reference on the GPS beacon
+  beacon fix (30.3780, 78.4800) after 2 pings
+
+> Friend class IncidentCommander reads and overrides private state
+  Audit by Cmdt. R. Negi (NDRF): GC-90 uses 2 of 2 manifest slots, payload limit 5000.00 kg
+  ordinary MED-01 availability: 260 units
+  commander released 100 reserve units -> 360 units available
+  overload clearance +10% -> payload limit 5500.00 kg (2 overrides issued)
+
+========================================================================
+UNIT II - Encapsulation, static members, dynamic memory, operator overloading
+========================================================================
+
+> Static members: one counter shared by every vehicle object
+  operational vehicles before: 0
+  after constructing GC-91   : 1
+
+> Dynamic constructor allocates the manifest; it grows on demand
+  slots at construction: 2
+  slots after 3 cargo lines: 4 (array reallocated)
+
+> operator== detects duplicate cargo: the same item merges into one line
+  lines: 3, MED-01 units now 150
+
+> Deep copy constructor: the copy owns a separate manifest array
+  vehicles after copy: 2, manifests identical (operator==): true
+  after loading water on the copy -> original lines: 3, copy lines: 4, identical: false
+
+> operator+= restocks the depot, operator-= deducts on departure
+  RAT-02 at start: 2000  | after += 500: 2500  | after -= 200: 2300
+
+> operator<< and operator>> round-trip a cargo line through a text stream
+  written : RAT-02 RationKit 8.00 200 3
+  read back: RAT-02 RationKit 8.00 200 3
+  same item: true
+
+Manifest: GC-91 (Alpha Convoy)
+------------------------------------------------------------------------
+ID        Category          Unit kg   Units   Total kg   Pri
+------------------------------------------------------------------------
+MED-01    TraumaMedicine       2.50     150     375.00     5
+RAT-02    RationKit            8.00     200    1600.00     3
+BLK-04    ThermalBlanket       1.20     300     360.00     2
+------------------------------------------------------------------------
+Load: 2335.00 / 6000.00 kg   Fuel: 500.00 / 500.00 L
+
+  (alpha and bravo go out of scope here; their destructors free both arrays)
+
+========================================================================
+UNIT III - Inheritance, virtual base classes, containership, polymorphism
+========================================================================
+
+> One loop, one call site: evaluateRoute() resolved at run time through ReliefVehicle*
+ID     Type              Chamoli  Rudraprayag        Tehri   Uttarkashi
+------------------------------------------------------------------------
+GC-01  Ground            blocked       4.85 h      blocked      blocked
+HX-07  Aerial             0.57 h       0.41 h       0.20 h       0.27 h
+QC-03  Aerial             2.08 h       1.52 h       0.73 h       1.00 h
+AB-02  Amphibious        blocked      blocked       2.65 h      blocked
+AM-05  Hybrid-Med        13.85 h       6.23 h       2.27 h      13.18 h
+------------------------------------------------------------------------
+  (ETA in hours for an empty vehicle; 'blocked' = DamagedCorridorException)
+
+> Diamond resolved: the hybrid holds exactly one ReliefVehicle sub-object
+  id via GroundConvoy path   : AM-05
+  id via AmphibiousCraft path: AM-05
+  both paths reach the same base object: true
+
+> Containership: vehicles HAVE a GPSBeacon and an EmergencyLifeSupportUnit
+  AM-05 beacon at (30.3165, 78.0322), 2 patients aboard, 0 stretchers free, oxygen for 2.50 h
+
+> Fleet deallocation through base pointers: virtual destructors run the full chain
+      ~GroundConvoy      GC-01
+      ~ReliefVehicle     GC-01
+      ~TransportVehicle  manifest freed for GC-01
+      ~AerialTransport   HX-07
+      ~ReliefVehicle     HX-07
+      ~TransportVehicle  manifest freed for HX-07
+      ~AerialTransport   QC-03
+      ~ReliefVehicle     QC-03
+      ~TransportVehicle  manifest freed for QC-03
+      ~AmphibiousCraft   AB-02
+      ~ReliefVehicle     AB-02
+      ~TransportVehicle  manifest freed for AB-02
+      ~AmphibiousMedUnit AM-05
+      ~AmphibiousCraft   AM-05
+      ~GroundConvoy      AM-05
+      ~ReliefVehicle     AM-05
+      ~TransportVehicle  manifest freed for AM-05
+  operational vehicles now: 0
+
+========================================================================
+UNIT IV - Exceptions, binary persistence, templates, STL, manipulators
+========================================================================
+
+> Depot inventory printed with user-defined manipulators (tableRule, col, num, fixed2)
+Depot: Dehradun Field Hub
+------------------------------------------------------------------------
+ID        Category          Unit kg   Units  Reserve   Total kg   Pri
+------------------------------------------------------------------------
+MED-01    TraumaMedicine       2.50     400      100    1000.00     5
+WTR-03    WaterTank          500.00      20        0   10000.00     4
+RAT-02    RationKit            8.00    2000        0   16000.00     3
+BLK-04    ThermalBlanket       1.20    3000        0    3600.00     2
+------------------------------------------------------------------------
+Total stock: 30.60 t
+
+> Template PriorityDispatchQueue<TriageRequest, TriageUrgency> orders the requests
+  1. Uttarkashi   MED-01  x200  severity 5  urgency score 665.00
+  2. Chamoli      MED-01  x150  severity 4  urgency score 530.00
+  3. Tehri        WTR-03  x2    severity 3  urgency score 370.00
+  4. Rudraprayag  BLK-04  x800  severity 2  urgency score 240.00
+
+> The same template with a different type: PriorityDispatchQueue<int>
+  pushed 3, 9, 5 -> popped 9, then 5
+
+> Dispatch cycle with exception handling and commander override
+  Request: Uttarkashi needs 200 x MED-01
+    skip GC-01: DamagedCorridor: NH-34 - road damage too severe for GC-01
+    skip QC-03: payload too heavy for this vehicle
+    skip AB-02: DamagedCorridor: NH-34 - craft AB-02 needs a waterway
+    DISPATCH HX-07 [Aerial] -> Uttarkashi via NH-34: 500.00 kg, 59.78 km, ETA 0.27 h, fuel 387.34 L
+  Request: Chamoli needs 150 x MED-01
+    skip GC-01: DamagedCorridor: NH-58 - road damage too severe for GC-01
+    skip QC-03: payload too heavy for this vehicle
+    skip AB-02: DamagedCorridor: NH-58 - craft AB-02 needs a waterway
+    CAUGHT InsufficientStock: 150 unit(s) of MED-01 requested, 100 available
+    Cmdt. R. Negi (NDRF) releases 100 reserve units; retrying
+    skip GC-01: DamagedCorridor: NH-58 - road damage too severe for GC-01
+    skip QC-03: payload too heavy for this vehicle
+    skip AB-02: DamagedCorridor: NH-58 - craft AB-02 needs a waterway
+    DISPATCH AM-05 [Hybrid-Med] -> Chamoli via NH-58: 375.00 kg, 252.00 km, ETA 13.85 h, fuel 291.06 L
+  Request: Tehri needs 2 x WTR-03
+    skip GC-01: DamagedCorridor: Bhagirathi - ground convoy GC-01 needs a road
+    skip QC-03: payload too heavy for this vehicle
+    DISPATCH AB-02 [Amphibious] -> Tehri via Bhagirathi: 1000.00 kg, 70.00 km, ETA 2.65 h, fuel 106.40 L
+  Request: Rudraprayag needs 800 x BLK-04
+    skip QC-03: payload too heavy for this vehicle
+    DISPATCH GC-01 [Ground] -> Rudraprayag via NH-7: 960.00 kg, 192.00 km, ETA 4.85 h, fuel 178.33 L
+
+> Remaining exception types raised deliberately
+  CAUGHT CargoOverweight: vehicle QC-03 would carry 500 kg against a limit of 25 kg (excess 475.00 kg)
+  CAUGHT FuelDepletion: vehicle QC-03 needs 82.4119 L but holds 40 L (short by 42.41 L)
+  CAUGHT (as std::exception) DamagedCorridor: Joshimath - no corridor mapped to this site
+
+> Binary transit log: atomic commit, reload from disk, in-place amend with seekp/seekg
+  committed 5 records to transit_log.bin (written to .tmp, then renamed)
+  record 1 amended on disk to 'Confirmed'; log as read back from the file:
+------------------------------------------------------------------------
+Seq  Vehicle Site          Corridor            Load kg  ETA h  Status
+------------------------------------------------------------------------
+1    HX-07   Uttarkashi    NH-34                500.00   0.27  Confirmed
+2    AM-05   Chamoli       NH-58                375.00  13.85  Delivered
+3    AB-02   Tehri         Bhagirathi          1000.00   2.65  Delivered
+4    GC-01   Rudraprayag   NH-7                 960.00   4.85  Delivered
+5    QC-03   Chamoli       Air lane C            20.00   0.00  Aborted
+------------------------------------------------------------------------
+
+> Manifest audit record: binary save and restore
+  QC-03 manifest saved; restored into QC-04; identical (operator==): true
+  CAUGHT Persistence: manifest_audit.bin - not a valid ERL-HUB transit log
+
+> STL algorithms: std::sort with a lambda, std::for_each with a functor
+  fleet by payload limit: GC-01 AM-05 HX-07 AB-02 QC-03
+  stock left in depot: 27.75 t
+
+> End-of-cycle status
+------------------------------------------------------------------------
+ID     Type        Call sign           Limit kg   Fuel L  Assignment
+------------------------------------------------------------------------
+GC-01  Ground      Himalaya Convoy     12000.00   421.67  at Rudraprayag
+HX-07  Aerial      Medevac Garuda       2500.00  1412.66  at Uttarkashi
+QC-03  Aerial      Scout Quad             25.00    40.00  at depot
+AB-02  Amphibious  River Rescue         1500.00   193.60  at Tehri
+AM-05  Hybrid-Med  Amphi-Med            3000.00   108.94  at Chamoli
+------------------------------------------------------------------------
+  Total dispatched (static metric): 2.83 t   Vehicle objects alive: 6 (5 fleet + spare QC-04)
+
+Demonstration complete. Vehicles still allocated: 0 (0 = no leaks)
